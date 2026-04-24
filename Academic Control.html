@@ -376,7 +376,8 @@
         function saveData(data) { localStorage.setItem('user_data_' + currentUser, JSON.stringify(data)); render(); }
 
         // ฟังก์ชัน Move Task ที่หายไป (กู้คืนกลับมาแล้ว)
-        function moveTask(id, dir) {
+        function moveTask(e, id, dir) {
+            if (e) e.stopPropagation();
             const data = getData();
             const task = data.tasks.find(t => t.id === id);
             if (!task) return;
@@ -423,9 +424,9 @@
                         </div>
                         <div class="flex justify-between mb-2">
                             <span class="text-[9px] font-bold px-2 py-0.5 rounded-full ${t.priority === 'hard' ? 'bg-red-50 text-red-600' : t.priority === 'easy' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'} uppercase">${t.priority === 'hard' ? 'สำคัญมาก' : t.priority === 'easy' ? 'ทั่วไป' : 'ปานกลาง'}</span>
-                            <div class="flex gap-1" onclick="event.stopPropagation()">
-                                <button onclick="moveTask('${t.id}', -1)" class="p-1 text-slate-300 hover:text-indigo-600"><i data-lucide="chevron-left" class="w-3 h-3"></i></button>
-                                <button onclick="moveTask('${t.id}', 1)" class="p-1 text-slate-300 hover:text-indigo-600"><i data-lucide="chevron-right" class="w-3 h-3"></i></button>
+                            <div class="flex gap-1">
+                                <button type="button" onclick="moveTask(event, '${t.id}', -1)" class="p-1 text-slate-300 hover:text-indigo-600"><i data-lucide="chevron-left" class="w-3 h-3"></i></button>
+                                <button type="button" onclick="moveTask(event, '${t.id}', 1)" class="p-1 text-slate-300 hover:text-indigo-600"><i data-lucide="chevron-right" class="w-3 h-3"></i></button>
                             </div>
                         </div>
                         <h4 class="text-sm font-bold text-slate-700">${t.title}</h4>
@@ -433,6 +434,21 @@
                     </div>
                 `).join('');
             });
+
+            // คืนค่าระบบแสดงผล Archive ที่หายไปในเวอร์ชันก่อนหน้า เพื่อให้เวลากดย้ายงานไป Done แล้วไปอยู่ในคลังได้สมบูรณ์
+            const archiveList = document.getElementById('archive-list');
+            if (archiveList) {
+                const doneTasks = data.tasks.filter(t => t.status === 'done');
+                archiveList.innerHTML = doneTasks.map(t => `
+                    <div class="p-4 bg-white rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm">
+                        <div>
+                            <h4 class="font-bold text-slate-700 text-sm">${t.title}</h4>
+                            <p class="text-[10px] text-slate-400">${t.subject} • กำหนดส่ง ${t.date}</p>
+                        </div>
+                        <button type="button" onclick="moveTask(event, '${t.id}', -1)" class="text-indigo-500 text-[10px] font-bold bg-indigo-50 px-3 py-1 rounded-full hover:bg-indigo-100">ดึงกลับ</button>
+                    </div>
+                `).join('') || '<p class="text-slate-300 text-sm col-span-full text-center py-10 italic">ไม่มีงานในคลังย้อนหลัง</p>';
+            }
 
             if(!document.getElementById('weekly-overlay').classList.contains('hidden')) renderScheduleOverlayData();
             lucide.createIcons();
